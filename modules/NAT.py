@@ -7,8 +7,18 @@ from modules import BaseModule
 
 
 class NAT(BaseModule):
+    """
+    Module to reconfigure iptables independently from system config.
+    """
+
     def __init__(self):
-        # This module requires unbound
+        self.local_interface = None
+        self.internet_interface = None
+        self.enabled = None
+        self.sysctl_backup = None
+        self.iptables_backup = None
+
+        # This module requires iptables
         self.binary = tools.locate('iptables')
         if self.binary is None:
             raise FileNotFoundError('The NAT module requires iptables to be installed and on $PATH.')

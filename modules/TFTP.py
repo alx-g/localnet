@@ -7,8 +7,16 @@ from modules import BaseModule
 
 
 class TFTP(BaseModule):
+    """
+    Module to configure and start tftpd independently from system config.
+    """
+
     def __init__(self):
-        # This module requires unbound
+        self.rootdir = None
+        self.pidfile = None
+        self.process = None
+
+        # This module requires tftpd
         self.binary = tools.locate('in.tftpd')
         if self.binary is None:
             raise FileNotFoundError('The TFTP module requires tftpd to be installed and on $PATH.')

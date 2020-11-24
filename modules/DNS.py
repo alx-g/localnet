@@ -9,7 +9,16 @@ from modules import BaseModule
 
 
 class DNS(BaseModule):
+    """
+    Module to configure and start unbound independently from system config.
+    """
+
     def __init__(self):
+        self.mask = None
+        self.ip = None
+        self.configfile = None
+        self.process = None
+
         # This module requires unbound
         self.binary = tools.locate('unbound')
         if self.binary is None:

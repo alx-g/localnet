@@ -4,6 +4,10 @@ from textwrap import wrap
 
 
 def ask(prompt: str, suggestion: str, type_spec: type, none_allowed: bool):
+    """
+    Helper function to ask input of specific type from user.
+    Suggestion can be given. 'None' can be allowed as a valid input value.
+    """
     p = ColorPrint()
     while True:
         if suggestion!='':
@@ -23,6 +27,10 @@ def ask(prompt: str, suggestion: str, type_spec: type, none_allowed: bool):
 
 
 def choose(text: str, prompt: str, options: Dict[str, str], suggestion: str, none_allowed: bool):
+    """
+    Helper function to ask user to select from a list of options (with optional description).
+    Suggestion can be given. 'None' can be allowed as a valid input value.
+    """
     p = ColorPrint()
     key_list = list(options.keys())
     p.print('\n'.join(wrap(text + ':',80)))

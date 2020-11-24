@@ -5,7 +5,14 @@ import threading
 
 
 class ThreadOutput:
+    """
+    This class enables simplistic capturing and retrieving output from subprocesses while they are running.
+    """
+
     def __init__(self, prefix):
+        """
+        Create ThreadOutput object, output using the dump method will be prefixed by '[prefix] '.
+        """
         self.prefix = prefix
         self.pipe = None
         self.queue = queue.Queue()
@@ -14,10 +21,16 @@ class ThreadOutput:
         self.running = True
 
     def register(self, sub):
+        """
+        Set subprocess to capture output from.
+        """
         self.pipe = sub.stdout
         self.sub = sub
 
     def runner(self):
+        """
+        This polling function runs in a separate thread and captures the output of the subprocess.
+        """
         while self.running:
             l = self.pipe.readline()
             if not l == b'':
@@ -26,6 +39,11 @@ class ThreadOutput:
                 time.sleep(0.1)
 
     def dump(self):
+        """
+        This function can be called to dump the current captured contents to stdout.
+        Contents will be prefixed by '[prefix] '
+        """
+
         try:
             while True:
                 lines = self.queue.get(False).decode()
@@ -37,10 +55,16 @@ class ThreadOutput:
             pass
 
     def stop(self):
+        """
+        Stop polling subprocess output and join running thread.
+        """
         self.running = False
         self.thread.join()
 
     def start(self):
+        """
+        Start polling subprocess output.
+        """
         self.thread = threading.Thread(target=self.runner)
         self.thread.daemon = True
         self.thread.start()

@@ -9,7 +9,21 @@ from modules import BaseModule
 
 
 class DHCP(BaseModule):
+    """
+    Module to configure and start dhcpd independently from system config.
+    """
+
     def __init__(self):
+        self.ip = None
+        self.mask = None
+        self.range = None
+        self.domain = None
+        self.pxe_file = None
+        self.local_interface = None
+        self.pidfile = None
+        self.configfile = None
+        self.process = None
+
         # This module requires dhcpd
         self.binary = tools.locate('dhcpd')
         if self.binary is None:

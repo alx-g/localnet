@@ -3,7 +3,15 @@ import sys
 
 
 class ColorPrint:
+    """
+    Simple class to allow colored printing using custom string format syntax.
+    """
+
     def __init__(self, stdout=sys.stdout, stderr=sys.stderr):
+        """
+        Setup a ColorPrint object with given stdout and stderr pipes
+        """
+
         self.stdout_pipe = stdout
         self.stderr_pipe = stderr
         self.table = {
@@ -23,9 +31,22 @@ class ColorPrint:
         }
 
     def print(self, format, *args, **kwargs):
+        """
+        Print to stdout using string .format()
+        Additional syntax: {!<color>} is replaced by the necessary codes.
+        Available colors: 'red','green','yellow','blue','magenta','cyan',''
+        {!} results in colors to be reset.
+        """
+
         self.__print(self.stdout_pipe, format, *args, **kwargs)
 
     def error(self, format, *args, **kwargs):
+        """
+        Print to stderr using string .format()
+        Additional syntax: {!<color>} is replaced by the necessary codes.
+        Available colors: 'red','green','yellow','blue','magenta','cyan',''
+        {!} results in colors to be reset.
+        """
         self.__print(self.stderr_pipe, format, *args, **kwargs)
 
     def __print(self, pipe, format, end='\n', *args, **kwargs):
