@@ -6,7 +6,7 @@ def interactive(args):
     adapters = ifaddr.get_adapters(include_unconfigured=True)
 
     options = {}
-    suggestion_local = None
+    suggestion_local = ''
     suggestion_internet = None
 
     for adapter in adapters:
