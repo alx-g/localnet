@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import subprocess
 import tempfile
 import textwrap
@@ -18,20 +19,25 @@ class DNS(BaseModule):
         self.ip = None
         self.configfile = None
         self.process = None
+        self.enabled = True
 
         # This module requires unbound
         self.binary = tools.locate('unbound')
         if self.binary is None:
-            raise FileNotFoundError('The DNS module requires unbound to be installed and on $PATH.')
+            print('The DNS module requires unbound to be installed and on $PATH.', file=sys.stderr)
+            self.enabled = False
 
         try:
             vstring = subprocess.check_output([self.binary, '-V'],
                                               stderr=subprocess.STDOUT).decode().strip()
             self.version = vstring.split('\n')[0].replace('Version', '').strip()
             if not self.version:
-                raise RuntimeError('The DNS module could not detect unbound version.')
+                print('The DNS module could not detect unbound version.', file=sys.stderr)
+                self.enabled = False
+
         except:
-            raise RuntimeError('The DNS module could not run ubound.')
+            print('The DNS module could not run ubound.', file=sys.stderr)
+            self.enabled = False
 
         self.stdout = tools.ThreadOutput('DNS')
 
@@ -40,10 +46,17 @@ class DNS(BaseModule):
         pass
 
     def configure(self, args):
+        if not self.enabled and (args.internet_interface is not None):
+            print('DNS module requested, but it will not run!', file=sys.stderr)
+
+        self.enabled_user = self.enabled and (args.internet_interface is not None)
         self.mask = args.subnet
         self.ip = args.ip
 
     def start(self):
+        if not self.enabled_user:
+            return
+
         self.configfile = tempfile.mkstemp(suffix='.conf', prefix='localnet_')[1]
 
         subnet_bytes = self.mask // 8
@@ -73,6 +86,9 @@ class DNS(BaseModule):
         pass
 
     def stop(self):
+        if not self.enabled_user:
+            return
+
         self.process.terminate()
         self.stdout.stop()
         os.remove(self.configfile)

@@ -61,22 +61,19 @@ def main(argv):
     dhcp.start()
     nat.start()
     dns.start()
-    if args.pxe:
-        tftp.start()
+    tftp.start()
 
     try:
         while True:
             dhcp.stdout.dump()
             dns.stdout.dump()
-            if args.pxe:
-                tftp.stdout.dump()
+            tftp.stdout.dump()
             time.sleep(0.1)
 
     except KeyboardInterrupt:
         pass
 
-    if args.pxe:
-        tftp.stop()
+    tftp.stop()
     dns.stop()
     nat.stop()
     dhcp.stop()

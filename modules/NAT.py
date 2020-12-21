@@ -1,6 +1,7 @@
 import argparse
 import subprocess
 import textwrap
+import sys
 
 import tools
 from modules import BaseModule
@@ -14,35 +15,42 @@ class NAT(BaseModule):
     def __init__(self):
         self.local_interface = None
         self.internet_interface = None
-        self.enabled = None
+        self.enabled = True
+        self.enabled_user = True
         self.sysctl_backup = None
         self.iptables_backup = None
 
         # This module requires iptables
         self.binary = tools.locate('iptables')
         if self.binary is None:
-            raise FileNotFoundError('The NAT module requires iptables to be installed and on $PATH.')
+            print('The NAT module requires iptables to be installed and on $PATH.', file=sys.stderr)
+            self.enabled = False
 
         try:
             self.version = subprocess.check_output([self.binary, '-V'],
                                                    stderr=subprocess.STDOUT).decode().strip()
 
             if not self.version:
-                raise RuntimeError('The NAT module could not detect iptables version.')
+                print('The NAT module could not detect iptables version.', file=sys.stderr)
+                self.enabled = False
         except:
-            raise RuntimeError('The NAT module could not run iptables.')
+            print('The NAT module could not run iptables.', file=sys.stderr)
+            self.enabled = False
 
     @staticmethod
     def register_args(parser: argparse.ArgumentParser):
         pass
 
     def configure(self, args):
+        if not self.enabled and (args.internet_interface is not None):
+            print('NAT module requested to bridge interfaces, but it will not run!', file=sys.stderr)
+
         self.local_interface = args.local_interface
         self.internet_interface = args.internet_interface
-        self.enabled = self.internet_interface is not None
+        self.enabled_user = (self.internet_interface is not None) and self.enabled
 
     def start(self):
-        if not self.enabled:
+        if not self.enabled_user:
             return
 
         # backup config
@@ -104,7 +112,7 @@ class NAT(BaseModule):
         pass
 
     def stop(self):
-        if not self.enabled:
+        if not self.enabled_user:
             return
 
         # Restore forwarding val
