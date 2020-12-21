@@ -1,4 +1,3 @@
-import re
 import sys
 
 
@@ -30,7 +29,7 @@ class ColorPrint:
             'c': '\033[36m'
         }
 
-    def print(self, format, *args, **kwargs):
+    def print(self, format_string, *args, **kwargs):
         """
         Print to stdout using string .format()
         Additional syntax: {!<color>} is replaced by the necessary codes.
@@ -38,19 +37,19 @@ class ColorPrint:
         {!} results in colors to be reset.
         """
 
-        self.__print(self.stdout_pipe, format, *args, **kwargs)
+        self.__print(self.stdout_pipe, format_string, *args, **kwargs)
 
-    def error(self, format, *args, **kwargs):
+    def error(self, format_string, *args, **kwargs):
         """
         Print to stderr using string .format()
         Additional syntax: {!<color>} is replaced by the necessary codes.
         Available colors: 'red','green','yellow','blue','magenta','cyan',''
         {!} results in colors to be reset.
         """
-        self.__print(self.stderr_pipe, format, *args, **kwargs)
+        self.__print(self.stderr_pipe, format_string, *args, **kwargs)
 
-    def __print(self, pipe, format, end='\n', *args, **kwargs):
-        cur = format
+    def __print(self, pipe, format_string, end='\n', *args, **kwargs):
+        cur = format_string
         for cmd, color in self.table.items():
             cur = cur.replace('{!' + cmd + '}', color)
         pipe.write(cur.format(*args, **kwargs) + self.table[''] + end)

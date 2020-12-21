@@ -11,18 +11,18 @@ def interactive(args):
 
     for adapter in adapters:
         name = adapter.name
-        descr = '' if adapter.nice_name == adapter.name else adapter.nice_name
+        description = '' if adapter.nice_name == adapter.name else adapter.nice_name
         if adapter.ips:
             ips_ = []
             for ip in adapter.ips:
                 ips_.append("%s/%s" % (ip.ip, ip.network_prefix))
-            descr += 'IP adresses: ' + ', '.join(ips_)
+            description += 'IP addresses: ' + ', '.join(ips_)
             suggestion_internet = name
         else:
-            descr += 'No IP adresses assigned to this interface.'
+            description += 'No IP addresses assigned to this interface.'
             suggestion_local = name
 
-        options[name] = descr
+        options[name] = description
 
     args.local_interface = tools.choose('Available network interfaces', 'Select local_interface', options,
                                         suggestion_local, False)

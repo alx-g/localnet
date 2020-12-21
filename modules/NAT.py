@@ -1,7 +1,7 @@
 import argparse
 import subprocess
-import textwrap
 import sys
+import textwrap
 
 import tools
 from modules import BaseModule

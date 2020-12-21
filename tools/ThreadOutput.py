@@ -1,7 +1,7 @@
-import time
-import sys
 import queue
+import sys
 import threading
+import time
 
 
 class ThreadOutput:
@@ -32,9 +32,9 @@ class ThreadOutput:
         This polling function runs in a separate thread and captures the output of the subprocess.
         """
         while self.running:
-            l = self.pipe.readline()
-            if not l == b'':
-                self.queue.put(l)
+            line = self.pipe.readline()
+            if not line == b'':
+                self.queue.put(line)
             else:
                 time.sleep(0.1)
 

@@ -1,7 +1,7 @@
 import argparse
 import os
-import sys
 import subprocess
+import sys
 import tempfile
 import textwrap
 
@@ -20,6 +20,7 @@ class DNS(BaseModule):
         self.configfile = None
         self.process = None
         self.enabled = True
+        self.enabled_user = None
 
         # This module requires unbound
         self.binary = tools.locate('unbound')
@@ -28,9 +29,9 @@ class DNS(BaseModule):
             self.enabled = False
 
         try:
-            vstring = subprocess.check_output([self.binary, '-V'],
-                                              stderr=subprocess.STDOUT).decode().strip()
-            self.version = vstring.split('\n')[0].replace('Version', '').strip()
+            version_string = subprocess.check_output([self.binary, '-V'],
+                                                     stderr=subprocess.STDOUT).decode().strip()
+            self.version = version_string.split('\n')[0].replace('Version', '').strip()
             if not self.version:
                 print('The DNS module could not detect unbound version.', file=sys.stderr)
                 self.enabled = False
@@ -66,11 +67,11 @@ class DNS(BaseModule):
                     server:
                         verbosity: 1
                         interface: {ip}
-                        access-control: {subnet0}/{maskbits} allow
+                        access-control: {subnet0}/{mask_bits} allow
                 ''').format(
             ip=self.ip,
             subnet0=subnet0,
-            maskbits=self.mask
+            mask_bits=self.mask
         )
         with open(self.configfile, 'w') as f:
             f.write(config)

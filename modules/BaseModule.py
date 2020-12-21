@@ -36,6 +36,6 @@ class BaseModule(ABC):
     @abstractmethod
     def stop(self):
         """
-        Funtcion to stop/clean up.
+        Function to stop/clean up.
         """
         pass

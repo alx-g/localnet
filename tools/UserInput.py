@@ -1,6 +1,8 @@
-from typing import Dict
-from tools import ColorPrint
+import sys
 from textwrap import wrap
+from typing import Dict
+
+from tools import ColorPrint
 
 
 def ask(prompt: str, suggestion: str, type_spec: type, none_allowed: bool):
@@ -8,22 +10,26 @@ def ask(prompt: str, suggestion: str, type_spec: type, none_allowed: bool):
     Helper function to ask input of specific type from user.
     Suggestion can be given. 'None' can be allowed as a valid input value.
     """
-    p = ColorPrint()
-    while True:
-        if suggestion!='':
-            p.print('{prompt} [{!y}{suggestion}{!}]: ', prompt=prompt, suggestion=str(suggestion), end='')
-            val = input()
-        else:
-            p.print('{prompt}: ', prompt=prompt, end='')
-            val = input()
-        if not val and suggestion!='':
-            return suggestion
-        if str(val).lower() == 'none' and none_allowed:
-            return None
-        try:
-            return type_spec(val)
-        except:
-            p.error('{!r}Invalid.')
+    try:
+        p = ColorPrint()
+        while True:
+            if suggestion != '':
+                p.print('{prompt} [{!y}{suggestion}{!}]: ', prompt=prompt, suggestion=str(suggestion), end='')
+                val = input()
+            else:
+                p.print('{prompt}: ', prompt=prompt, end='')
+                val = input()
+            if not val and suggestion != '':
+                return suggestion
+            if str(val).lower() == 'none' and none_allowed:
+                return None
+            try:
+                return type_spec(val)
+            except:
+                p.error('{!r}Invalid.')
+    except KeyboardInterrupt:
+        print('cancelled.')
+        sys.exit(255)
 
 
 def choose(text: str, prompt: str, options: Dict[str, str], suggestion: str, none_allowed: bool):
@@ -33,14 +39,14 @@ def choose(text: str, prompt: str, options: Dict[str, str], suggestion: str, non
     """
     p = ColorPrint()
     key_list = list(options.keys())
-    p.print('\n'.join(wrap(text + ':',80)))
+    p.print('\n'.join(wrap(text + ':', 80)))
     p.print('{!y}[')
     for k in range(len(key_list)):
         elem = key_list[k]
-        descr = options[elem]
-        if descr:
+        description = options[elem]
+        if description:
             p.print('  {!m}#{k}{!} {!y}{elem}{!}:', k=k, elem=elem)
-            for line in descr.split('\n'):
+            for line in description.split('\n'):
                 p.print('    {line}', line=line)
         else:
             p.print('  {!m}#{k}{!} {!y}{elem}{!}', k=k, elem=elem)
@@ -65,5 +71,3 @@ def choose(text: str, prompt: str, options: Dict[str, str], suggestion: str, non
                 p.error('{!r}Selection not unique for given substring.')
             else:
                 return matches[0]
-
-

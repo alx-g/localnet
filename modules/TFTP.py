@@ -1,6 +1,6 @@
 import argparse
-import sys
 import subprocess
+import sys
 
 import tools
 from modules import BaseModule
@@ -16,6 +16,7 @@ class TFTP(BaseModule):
         self.pidfile = None
         self.process = None
         self.enabled = True
+        self.enabled_user = None
 
         # This module requires tftpd
         self.binary = tools.locate('in.tftpd')

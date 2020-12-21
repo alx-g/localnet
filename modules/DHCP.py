@@ -1,6 +1,7 @@
 import argparse
 import os
 import subprocess
+import sys
 import tempfile
 import textwrap
 
@@ -27,15 +28,18 @@ class DHCP(BaseModule):
         # This module requires dhcpd
         self.binary = tools.locate('dhcpd')
         if self.binary is None:
-            raise FileNotFoundError('The DHCP module requires dhcpd to be installed and on $PATH.')
+            print('The DHCP module requires dhcpd to be installed and on $PATH. This is mandatory.', file=sys.stderr)
+            sys.exit(1)
 
         try:
             self.version = subprocess.check_output([self.binary, '--version'],
                                                    stderr=subprocess.STDOUT).decode().strip()
             if not self.version:
-                raise RuntimeError('The DHCP module could not detect dhcpd version.')
+                print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
+                sys.exit(1)
         except:
-            raise RuntimeError('The DHCP module could not run dhcpd.')
+            print('The DHCP module could not run dhcpd. This is mandatory.', file=sys.stderr)
+            sys.exit(1)
 
         self.stdout = tools.ThreadOutput('DHCP')
 
