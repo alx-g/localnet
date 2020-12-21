@@ -31,16 +31,16 @@ class DHCP(BaseModule):
         if self.dhcpd_binary is None:
             print('The DHCP module requires dhcpd to be installed and on $PATH. This is mandatory.', file=sys.stderr)
             self.enabled = False
-
-        try:
-            self.dhcpd_version = subprocess.check_output([self.dhcpd_binary, '--version'],
-                                                         stderr=subprocess.STDOUT).decode().strip()
-            if not self.dhcpd_version:
-                print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
+        else:
+            try:
+                self.dhcpd_version = subprocess.check_output([self.dhcpd_binary, '--version'],
+                                                             stderr=subprocess.STDOUT).decode().strip()
+                if not self.dhcpd_version:
+                    print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
+                    self.enabled = False
+            except:
+                print('The DHCP module could not run dhcpd. This is mandatory.', file=sys.stderr)
                 self.enabled = False
-        except:
-            print('The DHCP module could not run dhcpd. This is mandatory.', file=sys.stderr)
-            self.enabled = False
 
         self.ip_binary = tools.locate('ip')
         if self.ip_binary is None:

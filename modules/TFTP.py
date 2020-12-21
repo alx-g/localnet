@@ -21,18 +21,19 @@ class TFTP(BaseModule):
         # This module requires tftpd
         self.binary = tools.locate('in.tftpd')
         if self.binary is None:
-            print('The TFTP module requires tftpd to be installed and on $PATH.', file=sys.stderr)
+            print('The TFTP module requires tftpd (specifically in.tftpd) to be installed and on $PATH.',
+                  file=sys.stderr)
             self.enabled = False
-
-        try:
-            self.version = subprocess.check_output(['tftpd', '--version'],
-                                                   stderr=subprocess.STDOUT).decode().strip()
-            if not self.version:
-                print('The TFTP module could not detect tftpd version.', file=sys.stderr)
+        else:
+            try:
+                self.version = subprocess.check_output(['tftpd', '--version'],
+                                                       stderr=subprocess.STDOUT).decode().strip()
+                if not self.version:
+                    print('The TFTP module could not detect tftpd version.', file=sys.stderr)
+                    self.enabled = False
+            except:
+                print('The TFTP module could not run tftpd.', file=sys.stderr)
                 self.enabled = False
-        except:
-            print('The TFTP module could not run tftpd.', file=sys.stderr)
-            self.enabled = False
 
         self.stdout = tools.ThreadOutput('TFTP')
 

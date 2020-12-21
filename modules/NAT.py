@@ -25,17 +25,17 @@ class NAT(BaseModule):
         if self.binary is None:
             print('The NAT module requires iptables to be installed and on $PATH.', file=sys.stderr)
             self.enabled = False
+        else:
+            try:
+                self.version = subprocess.check_output([self.binary, '-V'],
+                                                       stderr=subprocess.STDOUT).decode().strip()
 
-        try:
-            self.version = subprocess.check_output([self.binary, '-V'],
-                                                   stderr=subprocess.STDOUT).decode().strip()
-
-            if not self.version:
-                print('The NAT module could not detect iptables version.', file=sys.stderr)
+                if not self.version:
+                    print('The NAT module could not detect iptables version.', file=sys.stderr)
+                    self.enabled = False
+            except:
+                print('The NAT module could not run iptables.', file=sys.stderr)
                 self.enabled = False
-        except:
-            print('The NAT module could not run iptables.', file=sys.stderr)
-            self.enabled = False
 
     @staticmethod
     def register_args(parser: argparse.ArgumentParser):

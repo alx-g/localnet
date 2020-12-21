@@ -27,18 +27,17 @@ class DNS(BaseModule):
         if self.binary is None:
             print('The DNS module requires unbound to be installed and on $PATH.', file=sys.stderr)
             self.enabled = False
-
-        try:
-            version_string = subprocess.check_output([self.binary, '-V'],
-                                                     stderr=subprocess.STDOUT).decode().strip()
-            self.version = version_string.split('\n')[0].replace('Version', '').strip()
-            if not self.version:
-                print('The DNS module could not detect unbound version.', file=sys.stderr)
+        else:
+            try:
+                version_string = subprocess.check_output([self.binary, '-V'],
+                                                         stderr=subprocess.STDOUT).decode().strip()
+                self.version = version_string.split('\n')[0].replace('Version', '').strip()
+                if not self.version:
+                    print('The DNS module could not detect unbound version.', file=sys.stderr)
+                    self.enabled = False
+            except:
+                print('The DNS module could not run ubound.', file=sys.stderr)
                 self.enabled = False
-
-        except:
-            print('The DNS module could not run ubound.', file=sys.stderr)
-            self.enabled = False
 
         self.stdout = tools.ThreadOutput('DNS')
 
