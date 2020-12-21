@@ -1,13 +1,13 @@
 # Temporary local networks with *localnet*
 ## Purpose
 This python script is supposed to help setting up a temporary local network on a given network interface.
-Depending on the confiugration, this may or may not include:
+Depending on the configuration, this may or may not include:
 * DHCP server using ```dhcpd```
 * NAT and packet forwarding to another network interface using ```iptables```, including simple DNS setup using ```unbound```
 * TFTP server to allow PXE network booting using ```tftp-hpa```
 
 ## Requirements
-The following commands must be available in ```$PATH```:
+To be able to use all features, the following commands must be available in ```$PATH```:
 * ```dhcpd```
 * ```iptables```
 * ```tftpd``` and ```in.tftpd```
@@ -60,3 +60,15 @@ optional arguments:
 
 If not enabling interactive mode with ```--interactive```, ```local_interface``` is a mandatory argument.
 To enable NAT, packet forwarding, and DNS, you have to provide ```internet_interface``` as the interface with internet/network access.
+
+## Interactive mode
+Interactive mode is launched with
+```
+localnet.py -i
+```
+and is especially useful, if you just need a quick way to manually setup a network.
+The script will interactively ask you to select the network interface(s) and already give you a suggestion:
+
+![example for interactive mode](interactive_mode.png)
+
+It will also ask if you want to enable internet forwarding and/or network booting.
