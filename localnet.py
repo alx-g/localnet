@@ -50,9 +50,8 @@ def main(argv):
 
     if not args.interactive:
         if not args.local_interface:
-            sys.stderr.write('error: Local interface argument is mandatory when not in interactive mode.\n')
-            sys.stderr.flush()
-            sys.exit(255)
+            print('Local interface argument is mandatory when not in interactive mode.', file=sys.stderr)
+            sys.exit(200)
     else:
         args = tools.interactive(args)
 

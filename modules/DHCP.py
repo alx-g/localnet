@@ -24,22 +24,38 @@ class DHCP(BaseModule):
         self.pidfile = None
         self.configfile = None
         self.process = None
+        self.enabled = True
 
         # This module requires dhcpd
-        self.binary = tools.locate('dhcpd')
-        if self.binary is None:
+        self.dhcpd_binary = tools.locate('dhcpd')
+        if self.dhcpd_binary is None:
             print('The DHCP module requires dhcpd to be installed and on $PATH. This is mandatory.', file=sys.stderr)
-            sys.exit(1)
+            self.enabled = False
 
         try:
-            self.version = subprocess.check_output([self.binary, '--version'],
-                                                   stderr=subprocess.STDOUT).decode().strip()
-            if not self.version:
+            self.dhcpd_version = subprocess.check_output([self.dhcpd_binary, '--version'],
+                                                         stderr=subprocess.STDOUT).decode().strip()
+            if not self.dhcpd_version:
                 print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
-                sys.exit(1)
+                self.enabled = False
         except:
             print('The DHCP module could not run dhcpd. This is mandatory.', file=sys.stderr)
-            sys.exit(1)
+            self.enabled = False
+
+        self.ip_binary = tools.locate('ip')
+        if self.ip_binary is None:
+            print('The DHCP module requires "ip" to be installed and on $PATH. This is mandatory.', file=sys.stderr)
+            self.enabled = False
+
+        try:
+            self.ip_version = subprocess.check_output([self.ip_binary, '-V'], stderr=subprocess.STDOUT).decode().strip()
+
+            if not self.ip_version:
+                print('The DHCP module could not detect "ip" version. This is mandatory.', file=sys.stderr)
+                self.enabled = False
+        except:
+            print('The DHCP module could not run "ip". This is mandatory.', file=sys.stderr)
+            self.enabled = False
 
         self.stdout = tools.ThreadOutput('DHCP')
 
@@ -58,6 +74,10 @@ class DHCP(BaseModule):
         self.pidfile = args.dhcp_pidfile
 
     def start(self):
+        if not self.enabled:
+            print('Cannot run DHCP module. exiting.', file=sys.stderr)
+            sys.exit(1)
+
         self.configfile = tempfile.mkstemp(suffix='.conf', prefix='localnet_')[1]
 
         subnet_bytes = self.mask // 8
@@ -95,13 +115,20 @@ class DHCP(BaseModule):
             f.write(config)
 
         # Setup interface and static ip
-        subprocess.check_call(['ip', 'link', 'set', 'up', 'dev', self.local_interface])
-        subprocess.check_call(['ip', 'address', 'flush', 'dev', self.local_interface])
-        subprocess.check_call(['ip', 'address', 'add', '%s/%d' % (self.ip, self.mask), 'dev', self.local_interface])
+        try:
+            subprocess.check_call([self.ip_binary, 'link', 'set', 'up', 'dev', self.local_interface])
+            subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
+            subprocess.check_call([self.ip_binary, 'address', 'add', '%s/%d' % (self.ip, self.mask), 'dev',
+                                   self.local_interface])
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 2:
+                print('The "ip" command indicated that the kernel reported an error. Did you run this script with'
+                      'elevated privileges?')
+                sys.exit(100)
 
         # Start DHCPD
         self.process = subprocess.Popen(
-            [self.binary, '-4', '-f', '-cf', self.configfile, '-pf', self.pidfile, self.local_interface],
+            [self.dhcpd_binary, '-4', '-f', '-cf', self.configfile, '-pf', self.pidfile, self.local_interface],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.stdout.register(self.process)
         self.stdout.start()
@@ -110,7 +137,10 @@ class DHCP(BaseModule):
         pass
 
     def stop(self):
+        if not self.enabled:
+            return
+
         self.process.terminate()
         self.stdout.stop()
-        subprocess.check_call(['ip', 'address', 'flush', 'dev', self.local_interface])
+        subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
         os.remove(self.configfile)
