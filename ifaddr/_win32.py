@@ -23,7 +23,7 @@ import ctypes
 import sys
 from ctypes import wintypes
 
-import lib.ifaddr._shared as shared
+import ifaddr._shared as shared
 
 NO_ERROR=0
 ERROR_BUFFER_OVERFLOW = 111

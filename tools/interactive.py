@@ -1,4 +1,4 @@
-from lib import ifaddr
+import ifaddr
 import tools
 
 

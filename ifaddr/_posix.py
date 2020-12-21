@@ -26,7 +26,7 @@ import ipaddress
 import collections
 import socket
 
-import lib.ifaddr._shared as shared
+import ifaddr._shared as shared
 #from ifaddr._shared import sockaddr, Interface, sockaddr_to_ip, ipv6_prefixlength
 
 class ifaddrs(ctypes.Structure):
