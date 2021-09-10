@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import re
 
 import tools
 from modules import BaseModule
@@ -29,12 +30,20 @@ class DNS(BaseModule):
             self.enabled = False
         else:
             try:
-                version_string = subprocess.check_output([self.binary, '-V'],
-                                                         stderr=subprocess.STDOUT).decode().strip()
-                self.version = version_string.split('\n')[0].replace('Version', '').strip()
-                if not self.version:
+                p = subprocess.Popen([self.binary, '-V'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+                [out,err] = p.communicate()
+                version_response = out.decode().strip()
+                find_version = re.compile(r'Version\s*(?P<version>[\d\.]+)')
+                match = find_version.search(version_response)
+                if not match:
                     print('The DNS module could not detect unbound version.', file=sys.stderr)
                     self.enabled = False
+                else:
+                    
+                    self.version = match.groupdict()['version']
+                    if not self.version:
+                        print('The DNS module could not detect unbound version.', file=sys.stderr)
+                        self.enabled = False
             except:
                 print('The DNS module could not run ubound.', file=sys.stderr)
                 self.enabled = False
