@@ -12,7 +12,7 @@ def main(argv):
     dhcp = modules.DHCP()
     nat = modules.NAT()
     dns = modules.DNS()
-    tftp = modules.TFTP()
+    firewall = modules.FIREWALL()
 
     parser = argparse.ArgumentParser(description="Helper script to create and maintain a local temporary network.")
 
@@ -44,7 +44,7 @@ def main(argv):
     dhcp.register_args(parser)
     nat.register_args(parser)
     dns.register_args(parser)
-    tftp.register_args(parser)
+    firewall.register_args(parser)
 
     args = parser.parse_args(argv)
 
@@ -59,25 +59,24 @@ def main(argv):
     dhcp.configure(args)
     nat.configure(args)
     dns.configure(args)
-    tftp.configure(args)
+    firewall.configure(args)
 
     nm.start()
     dhcp.start()
     nat.start()
     dns.start()
-    tftp.start()
+    firewall.start()
 
     try:
         while True:
             dhcp.stdout.dump()
             dns.stdout.dump()
-            tftp.stdout.dump()
             time.sleep(0.1)
 
     except KeyboardInterrupt:
         pass
 
-    tftp.stop()
+    firewall.stop()
     dns.stop()
     nat.stop()
     dhcp.stop()
@@ -85,7 +84,6 @@ def main(argv):
 
     dhcp.stdout.dump()
     dns.stdout.dump()
-    tftp.stdout.dump()
 
 
 if __name__ == '__main__':

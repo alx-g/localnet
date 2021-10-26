@@ -1,7 +1,6 @@
 import argparse
 import subprocess
 import sys
-import textwrap
 
 import tools
 from modules import BaseModule
@@ -9,7 +8,7 @@ from modules import BaseModule
 
 class NAT(BaseModule):
     """
-    Module to reconfigure iptables independently from system config.
+    Module to reconfigure nftables independently from system config.
     """
 
     def __init__(self):
@@ -18,23 +17,23 @@ class NAT(BaseModule):
         self.enabled = True
         self.enabled_user = True
         self.sysctl_backup = None
-        self.iptables_backup = None
+        self.subnet_definiton = None
 
-        # This module requires iptables
-        self.binary = tools.locate('iptables')
+        # This module requires nft
+        self.binary = tools.locate('nft')
         if self.binary is None:
-            print('The NAT module requires iptables to be installed and on $PATH.', file=sys.stderr)
+            print('The NAT module requires nft (nftables) to be installed and on $PATH.', file=sys.stderr)
             self.enabled = False
         else:
             try:
-                self.version = subprocess.check_output([self.binary, '-V'],
+                self.version = subprocess.check_output([self.binary, '-v'],
                                                        stderr=subprocess.STDOUT).decode().strip()
 
                 if not self.version:
-                    print('The NAT module could not detect iptables version.', file=sys.stderr)
+                    print('The NAT module could not detect nft (nftables) version.', file=sys.stderr)
                     self.enabled = False
             except:
-                print('The NAT module could not run iptables.', file=sys.stderr)
+                print('The NAT module could not run nft (nftables).', file=sys.stderr)
                 self.enabled = False
 
     @staticmethod
@@ -48,50 +47,14 @@ class NAT(BaseModule):
         self.local_interface = args.local_interface
         self.internet_interface = args.internet_interface
         self.enabled_user = (self.internet_interface is not None) and self.enabled
+        ip_addr = str(args.ip).split('.')
+        mask_bytes = int(args.subnet) // 8
+        ip_addr2 = ip_addr[:mask_bytes] + (4 - mask_bytes) * ['0']
+        self.subnet_definiton = '.'.join(ip_addr2) + '/' + str(int(args.subnet))
 
     def start(self):
         if not self.enabled_user:
             return
-
-        # backup config
-        self.iptables_backup = subprocess.check_output(['iptables-save'])
-
-        # load custom config
-        cfg = textwrap.dedent('''
-        *security
-        :INPUT ACCEPT [0:0]
-        :FORWARD ACCEPT [0:0]
-        :OUTPUT ACCEPT [0:0]
-        COMMIT
-        *raw
-        :PREROUTING ACCEPT [0:0]
-        :OUTPUT ACCEPT [0:0]
-        COMMIT
-        *mangle
-        :PREROUTING ACCEPT [0:0]
-        :INPUT ACCEPT [0:0]
-        :FORWARD ACCEPT [0:0]
-        :OUTPUT ACCEPT [0:0]
-        :POSTROUTING ACCEPT [0:0]
-        COMMIT
-        *filter
-        :INPUT ACCEPT [0:0]
-        :FORWARD ACCEPT [0:0]
-        :OUTPUT ACCEPT [0:0]
-        -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-        -A FORWARD -i {interface_local} -o {interface_internet} -j ACCEPT
-        COMMIT
-        *nat
-        :PREROUTING ACCEPT [0:0]
-        :INPUT ACCEPT [0:0]
-        :OUTPUT ACCEPT [0:0]
-        :POSTROUTING ACCEPT [0:0]
-        -A POSTROUTING -o {interface_internet} -j MASQUERADE
-        COMMIT
-        ''').format(
-            interface_local=self.local_interface,
-            interface_internet=self.internet_interface
-        )
 
         # Store old val
         self.sysctl_backup = subprocess.check_output(['sysctl', 'net.ipv4.ip_forward'], stderr=subprocess.STDOUT)
@@ -99,14 +62,16 @@ class NAT(BaseModule):
         # Enable forwarding
         subprocess.check_call(['sysctl', 'net.ipv4.ip_forward=1'])
 
-        proc = subprocess.Popen(['iptables-restore'], stdin=subprocess.PIPE)
-        proc.communicate(input=cfg.encode())
-        proc.wait()
-        if not proc.returncode == 0:
-            proc2 = subprocess.Popen(['iptables-restore'], stdin=subprocess.PIPE)
-            proc2.communicate(input=self.iptables_backup)
-            proc2.wait()
-            raise RuntimeError('Could not configure iptables, tried to restore prev config...')
+        # Add a custom temporary nft table
+        subprocess.check_call(['nft', 'add table ip localnet'])
+        subprocess.check_call(['nft', 'add chain ip localnet forward { type filter hook forward priority -10 ; }'])
+        subprocess.check_call(['nft', 'add rule localnet forward ct state vmap '
+                                      '{ established : accept, related : accept, invalid : drop }'])
+        subprocess.check_call(['nft', 'add rule localnet forward iifname %s accept' % (self.local_interface,)])
+        subprocess.check_call(['nft', 'add chain ip localnet prerouting { type nat hook prerouting priority 90 ; }'])
+        subprocess.check_call(['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
+        subprocess.check_call(['nft', 'add rule localnet postrouting ip saddr %s oifname %s masquerade' % (
+            self.subnet_definiton, self.internet_interface)])
 
     def status(self):
         pass
@@ -118,8 +83,25 @@ class NAT(BaseModule):
         # Restore forwarding val
         subprocess.check_call(['sysctl', self.sysctl_backup.decode().replace(' ', '')])
 
-        proc = subprocess.Popen(['iptables-restore'], stdin=subprocess.PIPE)
-        proc.communicate(input=self.iptables_backup)
-        proc.wait()
-        if not proc.returncode == 0:
-            raise RuntimeError('Could not restore iptables config...')
+        try:
+            subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'postrouting'])
+        except:
+            pass
+        try:
+            subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'forward'])
+        except:
+            pass
+        try:
+            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'prerouting'])
+        except:
+            pass
+        try:
+            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'postrouting'])
+        except:
+            pass
+        try:
+            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'forward'])
+        except:
+            pass
+
+        subprocess.check_call(['nft', 'delete', 'table', 'ip', 'localnet'])

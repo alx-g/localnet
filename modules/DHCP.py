@@ -69,7 +69,6 @@ class DHCP(BaseModule):
         self.mask = args.subnet
         self.range = args.iprange
         self.domain = args.domain
-        self.pxe_file = args.pxe
         self.local_interface = args.local_interface
         self.pidfile = args.dhcp_pidfile
 
@@ -90,7 +89,6 @@ class DHCP(BaseModule):
             default-lease-time 600;
             max-lease-time 7200;
             log-facility local7;
-            {boot_comment}allow booting;
             subnet {subnet0} netmask {subnet_mask} {{
                 range {range};
                 option broadcast-address {broadcast};
@@ -98,18 +96,14 @@ class DHCP(BaseModule):
                 option domain-name-servers {ip};
                 default-lease-time 14400;
                 max-lease-time 28800;
-                {boot_comment}filename "{pxe_file}";
-                {boot_comment}next-server {ip};
             }}
         ''').format(
             domain=self.domain,
-            boot_comment=('' if self.pxe_file else '# '),
             subnet0=subnet0,
             subnet_mask=mask,
             range=self.range,
             broadcast=broadcast,
             ip=self.ip,
-            pxe_file=self.pxe_file
         )
         with open(self.configfile, 'w') as f:
             f.write(config)
