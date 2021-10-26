@@ -36,10 +36,6 @@ def main(argv):
     parser.add_argument('--domain', action='store', type=str, default='localdomain',
                         help='Set the domain name for the local network, default is "localdomain"')
 
-    parser.add_argument('--pxe', action='store', type=str, default=None,
-                        help='Enable PXE network booting with given bootfile. Will start TFTP server. Disabled by'
-                             'default.')
-
     nm.register_args(parser)
     dhcp.register_args(parser)
     nat.register_args(parser)
