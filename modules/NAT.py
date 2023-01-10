@@ -12,6 +12,7 @@ class NAT(BaseModule):
     """
 
     def __init__(self):
+        self.subprocess = tools.mysubprocess(True, sys.stdout)
         self.local_interface = None
         self.internet_interface = None
         self.enabled = True
@@ -26,8 +27,8 @@ class NAT(BaseModule):
             self.enabled = False
         else:
             try:
-                self.version = subprocess.check_output([self.binary, '-v'],
-                                                       stderr=subprocess.STDOUT).decode().strip()
+                self.version = self.subprocess.check_output([self.binary, '-v'],
+                                                       stderr=subprocess.STDOUT).strip()
 
                 if not self.version:
                     print('The NAT module could not detect nft (nftables) version.', file=sys.stderr)
@@ -57,20 +58,20 @@ class NAT(BaseModule):
             return
 
         # Store old val
-        self.sysctl_backup = subprocess.check_output(['sysctl', 'net.ipv4.ip_forward'], stderr=subprocess.STDOUT)
+        self.sysctl_backup = self.subprocess.check_output(['sysctl', 'net.ipv4.ip_forward'], stderr=subprocess.STDOUT).strip()
 
         # Enable forwarding
-        subprocess.check_call(['sysctl', 'net.ipv4.ip_forward=1'])
+        self.subprocess.check_call(['sysctl', 'net.ipv4.ip_forward=1'])
 
         # Add a custom temporary nft table
-        subprocess.check_call(['nft', 'add table ip localnet'])
-        subprocess.check_call(['nft', 'add chain ip localnet forward { type filter hook forward priority -10 ; }'])
-        subprocess.check_call(['nft', 'add rule localnet forward ct state vmap '
-                                      '{ established : accept, related : accept, invalid : drop }'])
-        subprocess.check_call(['nft', 'add rule localnet forward iifname %s accept' % (self.local_interface,)])
-        subprocess.check_call(['nft', 'add chain ip localnet prerouting { type nat hook prerouting priority 90 ; }'])
-        subprocess.check_call(['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
-        subprocess.check_call(['nft', 'add rule localnet postrouting ip saddr %s oifname %s masquerade' % (
+        self.subprocess.check_call(['nft', 'add table ip localnet'])
+        self.subprocess.check_call(['nft', 'add chain ip localnet forward { type filter hook forward priority -10 ; }'])
+        self.subprocess.check_call(['nft', 'add rule localnet forward ct state vmap '
+                                           '{ established : accept, related : accept, invalid : drop }'])
+        self.subprocess.check_call(['nft', 'add rule localnet forward iifname %s accept' % (self.local_interface,)])
+        self.subprocess.check_call(['nft', 'add chain ip localnet prerouting { type nat hook prerouting priority 90 ; }'])
+        self.subprocess.check_call(['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
+        self.subprocess.check_call(['nft', 'add rule localnet postrouting ip saddr %s oifname %s masquerade' % (
             self.subnet_definiton, self.internet_interface)])
 
     def status(self):
@@ -81,27 +82,27 @@ class NAT(BaseModule):
             return
 
         # Restore forwarding val
-        subprocess.check_call(['sysctl', self.sysctl_backup.decode().replace(' ', '')])
+        self.subprocess.check_call(['sysctl', self.sysctl_backup.replace(' ', '')])
 
         try:
-            subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'postrouting'])
+            self.subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'postrouting'])
         except:
             pass
         try:
-            subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'forward'])
+            self.subprocess.check_call(['nft', 'flush', 'chain', 'localnet', 'forward'])
         except:
             pass
         try:
-            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'prerouting'])
+            self.subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'prerouting'])
         except:
             pass
         try:
-            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'postrouting'])
+            self.subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'postrouting'])
         except:
             pass
         try:
-            subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'forward'])
+            self.subprocess.check_call(['nft', 'delete', 'chain', 'ip', 'localnet', 'forward'])
         except:
             pass
 
-        subprocess.check_call(['nft', 'delete', 'table', 'ip', 'localnet'])
+        self.subprocess.check_call(['nft', 'delete', 'table', 'ip', 'localnet'])

@@ -1,6 +1,6 @@
 import argparse
-import subprocess
 import sys
+import subprocess
 from typing import List
 
 import tools
@@ -14,6 +14,8 @@ class FIREWALL(BaseModule):
     SUPPORTED = {'firewall-cmd': 'firewall daemon'}
 
     def __init__(self):
+        self.subprocess = tools.mysubprocess(True, sys.stdout)
+
         self.local_interface = None
         self.internet_interface = None
         self.firewall_type = None
@@ -71,37 +73,37 @@ class FIREWALL(BaseModule):
             return
         if self.firewall_type == 'firewall-cmd':
             try:
-                self.internet_zone = subprocess.check_output(
-                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.internet_interface, )]).decode().strip()
+                self.internet_zone = self.subprocess.check_output(
+                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.internet_interface, )]).strip()
             except subprocess.CalledProcessError:
                 print('[FIREWALL] Your main interface is not assigned to a zone, dont know what to do now...', file=sys.stderr)
                 self.enabled = False
                 return
             try:
-                self.local_zone = subprocess.check_output(
-                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.local_interface,)]).decode().strip()
+                self.local_zone = self.subprocess.check_output(
+                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.local_interface,)]).strip()
             except subprocess.CalledProcessError:
                 self.local_zone = None
 
             if self.local_zone != self.internet_zone:
                 if self.local_zone is not None:
-                    subprocess.check_call(
-                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--remove-interface=%s' % (self.local_interface)])
-                subprocess.check_call(
-                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-interface=%s' % (self.local_interface)])
+                    self.subprocess.check_call(
+                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--remove-interface=%s' % (self.local_interface,)])
+                self.subprocess.check_call(
+                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-interface=%s' % (self.local_interface,)])
 
             try:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--query-forward'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--query-forward'])
                 self.query_forward = True
             except subprocess.CalledProcessError:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-forward'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-forward'])
                 self.query_forward = False
 
             try:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--query-service=dns'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--query-service=dns'])
                 self.dns_allowed = True
             except subprocess.CalledProcessError:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-service=dns'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-service=dns'])
                 self.dns_allowed = False
 
     def status(self):
@@ -113,17 +115,17 @@ class FIREWALL(BaseModule):
 
         if self.firewall_type == 'firewall-cmd':
             if not self.dns_allowed:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-service=dns'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-service=dns'])
 
             if not self.query_forward:
-                subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-forward'])
+                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-forward'])
 
             if self.local_zone != self.internet_zone:
-                subprocess.check_call(
-                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-interface=%s' % (self.local_interface)])
+                self.subprocess.check_call(
+                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-interface=%s' % (self.local_interface,)])
                 if self.local_zone is not None:
-                    subprocess.check_call(
-                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--add-interface=%s' % (self.local_interface)])
+                    self.subprocess.check_call(
+                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--add-interface=%s' % (self.local_interface,)])
 
 
 

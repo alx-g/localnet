@@ -16,6 +16,7 @@ class DNS(BaseModule):
     """
 
     def __init__(self):
+        self.subprocess = tools.mysubprocess(True, sys.stdout)
         self.mask = None
         self.ip = None
         self.configfile = None
@@ -30,7 +31,7 @@ class DNS(BaseModule):
             self.enabled = False
         else:
             try:
-                p = subprocess.Popen([self.binary, '-V'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+                p = self.subprocess.Popen([self.binary, '-V'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
                 [out,err] = p.communicate()
                 version_response = out.decode().strip()
                 find_version = re.compile(r'Version\s*(?P<version>[\d\.]+)')
@@ -85,7 +86,7 @@ class DNS(BaseModule):
             f.write(config)
 
         # Start DNS server
-        self.process = subprocess.Popen(
+        self.process = self.subprocess.Popen(
             [self.binary, '-d', '-c', self.configfile],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.stdout.register(self.process)

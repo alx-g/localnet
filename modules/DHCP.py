@@ -15,6 +15,7 @@ class DHCP(BaseModule):
     """
 
     def __init__(self):
+        self.subprocess = tools.mysubprocess(True, sys.stdout)
         self.ip = None
         self.mask = None
         self.range = None
@@ -33,8 +34,8 @@ class DHCP(BaseModule):
             self.enabled = False
         else:
             try:
-                self.dhcpd_version = subprocess.check_output([self.dhcpd_binary, '--version'],
-                                                             stderr=subprocess.STDOUT).decode().strip()
+                self.dhcpd_version = self.subprocess.check_output([self.dhcpd_binary, '--version'],
+                                                             stderr=subprocess.STDOUT).strip()
                 if not self.dhcpd_version:
                     print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
                     self.enabled = False
@@ -48,7 +49,7 @@ class DHCP(BaseModule):
             self.enabled = False
 
         try:
-            self.ip_version = subprocess.check_output([self.ip_binary, '-V'], stderr=subprocess.STDOUT).decode().strip()
+            self.ip_version = self.subprocess.check_output([self.ip_binary, '-V'], stderr=subprocess.STDOUT).strip()
 
             if not self.ip_version:
                 print('The DHCP module could not detect "ip" version. This is mandatory.', file=sys.stderr)
@@ -110,9 +111,9 @@ class DHCP(BaseModule):
 
         # Setup interface and static ip
         try:
-            subprocess.check_call([self.ip_binary, 'link', 'set', 'up', 'dev', self.local_interface])
-            subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
-            subprocess.check_call([self.ip_binary, 'address', 'add', '%s/%d' % (self.ip, self.mask), 'dev',
+            self.subprocess.check_call([self.ip_binary, 'link', 'set', 'up', 'dev', self.local_interface])
+            self.subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
+            self.subprocess.check_call([self.ip_binary, 'address', 'add', '%s/%d' % (self.ip, self.mask), 'dev',
                                    self.local_interface])
         except subprocess.CalledProcessError as e:
             if e.returncode == 2:
@@ -121,7 +122,7 @@ class DHCP(BaseModule):
                 sys.exit(100)
 
         # Start DHCPD
-        self.process = subprocess.Popen(
+        self.process = self.subprocess.Popen(
             [self.dhcpd_binary, '-4', '-f', '-cf', self.configfile, '-pf', self.pidfile, self.local_interface],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.stdout.register(self.process)
@@ -136,5 +137,5 @@ class DHCP(BaseModule):
 
         self.process.terminate()
         self.stdout.stop()
-        subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
+        self.subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
         os.remove(self.configfile)

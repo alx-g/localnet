@@ -1,5 +1,6 @@
 import argparse
 import subprocess
+import sys
 
 import tools
 from modules import BaseModule
@@ -11,6 +12,7 @@ class NM(BaseModule):
     """
 
     def __init__(self):
+        self.subprocess = tools.mysubprocess(True, sys.stdout)
         self.local_interface = None
         self.binary = tools.locate('nmcli')
         if self.binary is None:
@@ -18,8 +20,8 @@ class NM(BaseModule):
             self.disabled = True
         else:
             try:
-                self.version = subprocess.check_output([self.binary, '--version'],
-                                                       stderr=subprocess.STDOUT).decode().strip()
+                self.version = self.subprocess.check_output([self.binary, '--version'],
+                                                       stderr=subprocess.STDOUT).strip()
                 if not self.version:
                     print('The NM module could not detect nmcli version.')
                     self.disabled = True
@@ -42,11 +44,11 @@ class NM(BaseModule):
 
     def start(self):
         if not self.disabled:
-            subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'no'])
+            self.subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'no'])
 
     def status(self):
         pass
 
     def stop(self):
         if not self.disabled:
-            subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'yes'])
+            self.subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'yes'])
