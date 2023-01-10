@@ -19,38 +19,27 @@ To be able to use all features, the following commands must be available in ```$
 In order to be able to start the services necessary and to edit the iptables config, you have to run this script with **root privileges***.
 
 ```
-usage: localnet.py [-h] [--interactive] [--ip IP] [--subnet SUBNET]
-                   [--iprange IPRANGE] [--domain DOMAIN] [--pxe PXE] [--no-nm]
-                   [--dhcp-pidfile DHCP_PIDFILE]
-                   [--firewall-type FIREWALL_TYPE]
-                   [local_interface] [internet_interface]
+usage: localnet.py [-h] [--interactive] [--ip IP] [--subnet SUBNET] [--iprange IPRANGE] [--domain DOMAIN] [--no-nm] [--dhcp-pidfile DHCP_PIDFILE] [--firewall-type FIREWALL_TYPE] [--no-firewall] [local_interface] [internet_interface]
 
 Helper script to create and maintain a local temporary network.
 
 positional arguments:
   local_interface       Network interface to use for local network
-  internet_interface    Network interface with internet access that should be
-                        used to bridge the local networkto.
+  internet_interface    Network interface with internet access that should be used to bridge the local networkto.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  --interactive, -i     Enable interactive mode, common parameters not already
-                        given will be asked from userinteractively.
-  --ip IP               This computers static ip address, default is
-                        10.10.10.1
-  --subnet SUBNET       DHCP subnet mask as number of bits, default is 24. For
-                        now only 24,16, and 8 aresupported.
-  --iprange IPRANGE     Set address range for DHCP, default is "10.10.10.100
-                        10.10.10.200"
-  --domain DOMAIN       Set the domain name for the local network, default is
-                        "localdomain"
+  --interactive, -i     Enable interactive mode, common parameters not already given will be asked from userinteractively.
+  --ip IP               This computers static ip address, default is 10.10.10.1
+  --subnet SUBNET       DHCP subnet mask as number of bits, default is 24. For now only 24,16, and 8 aresupported.
+  --iprange IPRANGE     Set address range for DHCP, default is "10.10.10.100 10.10.10.200"
+  --domain DOMAIN       Set the domain name for the local network, default is "localdomain"
   --no-nm               Do not configure NetworkManager.
   --dhcp-pidfile DHCP_PIDFILE
-                        Set path for dhcpd pidfile, default is
-                        "/run/dhcpd.pid"
+                        Set path for dhcpd pidfile, default is "/run/dhcpd.pid"
   --firewall-type FIREWALL_TYPE
-                        Set firewall type to configure manually, selected
-                        automatically by default
+                        Set firewall type to configure manually, selected automatically by default
+  --no-firewall         Do not configure firewalld
 ```
 
 If not enabling interactive mode with ```--interactive```, ```local_interface``` is a mandatory argument.
