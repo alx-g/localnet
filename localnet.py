@@ -63,27 +63,29 @@ def main(argv):
     firewall.configure(args)
 
     c.print('{!b}Running modules')
-    nm.start()
-    dhcp.start()
-    nat.start()
-    dns.start()
-    firewall.start()
-
     try:
-        while True:
-            dhcp.stdout.dump()
-            dns.stdout.dump()
-            time.sleep(0.1)
+        nm.start()
+        dhcp.start()
+        nat.start()
+        dns.start()
+        firewall.start()
 
-    except KeyboardInterrupt:
-        pass
+        try:
+            while True:
+                dhcp.stdout.dump()
+                dns.stdout.dump()
+                time.sleep(0.1)
 
-    c.print('{!b}Stopping modules')
-    firewall.stop()
-    dns.stop()
-    nat.stop()
-    dhcp.stop()
-    nm.stop()
+        except KeyboardInterrupt:
+            pass
+
+    finally:
+        c.print('{!b}Stopping modules')
+        firewall.stop()
+        dns.stop()
+        nat.stop()
+        dhcp.stop()
+        nm.stop()
 
     dhcp.stdout.dump()
     dns.stdout.dump()

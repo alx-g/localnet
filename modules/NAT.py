@@ -11,6 +11,7 @@ class NAT(BaseModule):
     """
 
     def __init__(self):
+        self.running = False
         self.c = tools.ColorPrint(name=self.__class__.__name__)
         self.subprocess = tools.mysubprocess(self.__class__.__name__)
 
@@ -77,12 +78,13 @@ class NAT(BaseModule):
             ['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
         self.subprocess.check_call(['nft', 'add rule localnet postrouting ip saddr %s oifname %s masquerade' % (
             self.subnet_definiton, self.internet_interface)])
+        self.running = True
 
     def status(self):
         pass
 
     def stop(self):
-        if not self.enabled_user:
+        if not self.enabled_user or not self.running:
             return
 
         # Restore forwarding val
@@ -110,3 +112,4 @@ class NAT(BaseModule):
             pass
 
         self.subprocess.check_call(['nft', 'delete', 'table', 'ip', 'localnet'])
+        self.running = False

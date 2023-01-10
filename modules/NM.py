@@ -11,6 +11,7 @@ class NM(BaseModule):
     """
 
     def __init__(self):
+        self.running = False
         self.c = tools.ColorPrint(name=self.__class__.__name__)
         self.subprocess = tools.mysubprocess(self.__class__.__name__)
 
@@ -46,10 +47,12 @@ class NM(BaseModule):
     def start(self):
         if not self.disabled:
             self.subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'no'])
+        self.running = True
 
     def status(self):
         pass
 
     def stop(self):
-        if not self.disabled:
+        if not self.disabled and self.running:
             self.subprocess.check_call(['nmcli', 'dev', 'set', self.local_interface, 'managed', 'yes'])
+        self.running = False

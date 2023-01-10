@@ -14,6 +14,7 @@ class FIREWALL(BaseModule):
     SUPPORTED = {'firewall-cmd': 'firewall daemon'}
 
     def __init__(self):
+        self.running = False
         self.c = tools.ColorPrint(name=self.__class__.__name__)
         self.subprocess = tools.mysubprocess(self.__class__.__name__)
 
@@ -111,12 +112,13 @@ class FIREWALL(BaseModule):
             except subprocess.CalledProcessError:
                 self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-service=dns'])
                 self.dns_allowed = False
+        self.running = True
 
     def status(self):
         pass
 
     def stop(self):
-        if not self.enabled:
+        if not self.enabled or not self.running:
             return
 
         if self.firewall_type == 'firewall-cmd':
@@ -135,3 +137,4 @@ class FIREWALL(BaseModule):
                     self.subprocess.check_call(
                         ['firewall-cmd', '--zone=%s' % (self.local_zone,),
                          '--add-interface=%s' % (self.local_interface,)])
+        self.running = False

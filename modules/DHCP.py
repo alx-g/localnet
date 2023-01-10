@@ -15,6 +15,7 @@ class DHCP(BaseModule):
     """
 
     def __init__(self):
+        self.running = False
         self.c = tools.ColorPrint(name=self.__class__.__name__)
         self.subprocess = tools.mysubprocess(self.__class__.__name__)
         self.ip = None
@@ -129,15 +130,17 @@ class DHCP(BaseModule):
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.stdout.register(self.process)
         self.stdout.start()
+        self.running = True
 
     def status(self):
         pass
 
     def stop(self):
-        if not self.enabled:
+        if not self.enabled or not self.running:
             return
 
         self.process.terminate()
         self.stdout.stop()
         self.subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
         os.remove(self.configfile)
+        self.running = False
