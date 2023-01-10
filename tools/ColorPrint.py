@@ -6,11 +6,12 @@ class ColorPrint:
     Simple class to allow colored printing using custom string format syntax.
     """
 
-    def __init__(self, stdout=sys.stdout, stderr=sys.stderr):
+    def __init__(self, stdout=sys.stdout, stderr=sys.stderr, name=None):
         """
         Setup a ColorPrint object with given stdout and stderr pipes
         """
 
+        self.name = name
         self.stdout_pipe = stdout
         self.stderr_pipe = stderr
         self.table = {
@@ -48,8 +49,11 @@ class ColorPrint:
         """
         self.__print(self.stderr_pipe, format_string, *args, **kwargs)
 
-    def __print(self, pipe, format_string, end='\n', *args, **kwargs):
-        cur = format_string
+    def __print(self, pipe, format_string, end='\n'):
+        if self.name is not None:
+            cur = '[' + self.name + '] ' + format_string
+        else:
+            cur = format_string
         for cmd, color in self.table.items():
             cur = cur.replace('{!' + cmd + '}', color)
-        pipe.write(cur.format(*args, **kwargs) + self.table[''] + end)
+        pipe.write(cur + self.table[''] + end)

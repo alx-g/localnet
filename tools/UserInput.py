@@ -14,10 +14,10 @@ def ask(prompt: str, suggestion: str, type_spec: type, none_allowed: bool):
         p = ColorPrint()
         while True:
             if suggestion != '':
-                p.print('{prompt} [{!y}{suggestion}{!}]: ', prompt=prompt, suggestion=str(suggestion), end='')
+                p.print('%s [{!y}%s{!}]: ' % (prompt, str(suggestion)), end='')
                 val = input()
             else:
-                p.print('{prompt}: ', prompt=prompt, end='')
+                p.print('%s: ' % (prompt,), end='')
                 val = input()
             if not val and suggestion != '':
                 return suggestion
@@ -45,11 +45,11 @@ def choose(text: str, prompt: str, options: Dict[str, str], suggestion: str, non
         elem = key_list[k]
         description = options[elem]
         if description:
-            p.print('  {!m}#{k}{!} {!y}{elem}{!}:', k=k, elem=elem)
+            p.print('  {!m}#%d{!} {!y}%s{!}:' % (k, elem))
             for line in description.split('\n'):
-                p.print('    {line}', line=line)
+                p.print('    %s' % (line,))
         else:
-            p.print('  {!m}#{k}{!} {!y}{elem}{!}', k=k, elem=elem)
+            p.print('  {!m}#%d{!} {!y}%s{!}' % (k, elem))
 
     p.print('{!y}]')
     p.print('Selection can be made by unique prefix or index.')

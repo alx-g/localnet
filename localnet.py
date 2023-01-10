@@ -8,6 +8,9 @@ import tools
 
 
 def main(argv):
+    c = tools.ColorPrint(name='LOCALNET')
+    c.print('{!b}Registering modules')
+
     nm = modules.NM()
     dhcp = modules.DHCP()
     nat = modules.NAT()
@@ -46,17 +49,20 @@ def main(argv):
 
     if not args.interactive:
         if not args.local_interface:
-            print('Local interface argument is mandatory when not in interactive mode.', file=sys.stderr)
+            c.error('{!r}Local interface argument is mandatory when not in interactive mode.')
             sys.exit(200)
     else:
+        c.print('{!b}Interactive mode')
         args = tools.interactive(args)
 
+    c.print('{!b}Configuring modules')
     nm.configure(args)
     dhcp.configure(args)
     nat.configure(args)
     dns.configure(args)
     firewall.configure(args)
 
+    c.print('{!b}Running modules')
     nm.start()
     dhcp.start()
     nat.start()
@@ -72,6 +78,7 @@ def main(argv):
     except KeyboardInterrupt:
         pass
 
+    c.print('{!b}Stopping modules')
     firewall.stop()
     dns.stop()
     nat.stop()
@@ -80,6 +87,8 @@ def main(argv):
 
     dhcp.stdout.dump()
     dns.stdout.dump()
+
+    c.print('{!b}Cleaned up.')
 
 
 if __name__ == '__main__':

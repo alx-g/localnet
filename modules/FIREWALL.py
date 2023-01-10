@@ -1,6 +1,6 @@
 import argparse
-import sys
 import subprocess
+import sys
 from typing import List
 
 import tools
@@ -14,7 +14,8 @@ class FIREWALL(BaseModule):
     SUPPORTED = {'firewall-cmd': 'firewall daemon'}
 
     def __init__(self):
-        self.subprocess = tools.mysubprocess(True, sys.stdout)
+        self.c = tools.ColorPrint(name=self.__class__.__name__)
+        self.subprocess = tools.mysubprocess(self.__class__.__name__)
 
         self.local_interface = None
         self.internet_interface = None
@@ -27,20 +28,22 @@ class FIREWALL(BaseModule):
 
         firewalls_detected = FIREWALL.find_available()
         if len(firewalls_detected) == 0:
-            print('The FIREWALL module found no installed firewall cmd tools, this may still be ok. '
-                  'This module will not run!')
+            self.c.error('{!r}The FIREWALL module found no installed firewall cmd tools, this may still be ok. '
+                         'This module will not run!')
             self.enabled = False
         elif len(firewalls_detected) == 1:
             self.firewall_type = firewalls_detected[0]
         else:
-            print('The FIREWALL module found multiple installed firewall cmd tools, please specify by argument which '
-                  'one to use. This module will not run!', file=sys.stderr)
+            self.c.error(
+                '{!r}The FIREWALL module found multiple installed firewall cmd tools, please specify by argument which '
+                'one to use. This module will not run!')
             self.enabled = False
 
         self.binary = tools.locate(self.firewall_type)
         if self.binary is None:
-            print('The FIREWALL module could not find the cmd tool for the configured firewall type. This module will '
-                  'not run!', file=sys.stderr)
+            self.c.error(
+                '{!r}The FIREWALL module could not find the cmd tool for the configured firewall type. This module will '
+                'not run!')
             self.enabled = False
 
     @staticmethod
@@ -62,7 +65,7 @@ class FIREWALL(BaseModule):
             self.firewall_type = None
         else:
             if str(args.firewall_type) not in FIREWALL.SUPPORTED.keys():
-                print('FIREWALL module does not recognize firewall type "%s". This module will not run!', file=sys.stderr)
+                self.c.error('{!}module does not recognize firewall type "%s". This module will not run!')
                 self.enabled = False
 
         self.local_interface = args.local_interface
@@ -74,9 +77,10 @@ class FIREWALL(BaseModule):
         if self.firewall_type == 'firewall-cmd':
             try:
                 self.internet_zone = self.subprocess.check_output(
-                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.internet_interface, )]).strip()
+                    ['firewall-cmd', '--get-zone-of-interface=%s' % (self.internet_interface,)]).strip()
             except subprocess.CalledProcessError:
-                print('[FIREWALL] Your main interface is not assigned to a zone, dont know what to do now...', file=sys.stderr)
+                self.c.error('{!r}Your main interface is not assigned to a zone, dont know what to do now...',
+                             file=sys.stderr)
                 self.enabled = False
                 return
             try:
@@ -88,9 +92,11 @@ class FIREWALL(BaseModule):
             if self.local_zone != self.internet_zone:
                 if self.local_zone is not None:
                     self.subprocess.check_call(
-                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--remove-interface=%s' % (self.local_interface,)])
+                        ['firewall-cmd', '--zone=%s' % (self.local_zone,),
+                         '--remove-interface=%s' % (self.local_interface,)])
                 self.subprocess.check_call(
-                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--add-interface=%s' % (self.local_interface,)])
+                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,),
+                     '--add-interface=%s' % (self.local_interface,)])
 
             try:
                 self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--query-forward'])
@@ -115,17 +121,17 @@ class FIREWALL(BaseModule):
 
         if self.firewall_type == 'firewall-cmd':
             if not self.dns_allowed:
-                self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-service=dns'])
+                self.subprocess.check_call(
+                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-service=dns'])
 
             if not self.query_forward:
                 self.subprocess.check_call(['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-forward'])
 
             if self.local_zone != self.internet_zone:
                 self.subprocess.check_call(
-                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,), '--remove-interface=%s' % (self.local_interface,)])
+                    ['firewall-cmd', '--zone=%s' % (self.internet_zone,),
+                     '--remove-interface=%s' % (self.local_interface,)])
                 if self.local_zone is not None:
                     self.subprocess.check_call(
-                        ['firewall-cmd', '--zone=%s' % (self.local_zone,), '--add-interface=%s' % (self.local_interface,)])
-
-
-
+                        ['firewall-cmd', '--zone=%s' % (self.local_zone,),
+                         '--add-interface=%s' % (self.local_interface,)])

@@ -1,10 +1,9 @@
 import argparse
 import os
+import re
 import subprocess
-import sys
 import tempfile
 import textwrap
-import re
 
 import tools
 from modules import BaseModule
@@ -16,7 +15,8 @@ class DNS(BaseModule):
     """
 
     def __init__(self):
-        self.subprocess = tools.mysubprocess(True, sys.stdout)
+        self.c = tools.ColorPrint(name=self.__class__.__name__)
+        self.subprocess = tools.mysubprocess(self.__class__.__name__)
         self.mask = None
         self.ip = None
         self.configfile = None
@@ -27,26 +27,24 @@ class DNS(BaseModule):
         # This module requires unbound
         self.binary = tools.locate('unbound')
         if self.binary is None:
-            print('The DNS module requires unbound to be installed and on $PATH.', file=sys.stderr)
+            self.c.error('{!r}The DNS module requires unbound to be installed and on $PATH.')
             self.enabled = False
         else:
             try:
-                p = self.subprocess.Popen([self.binary, '-V'], stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-                [out,err] = p.communicate()
-                version_response = out.decode().strip()
+                version_response = self.subprocess.check_output([self.binary, '-V'], stderr=subprocess.STDOUT).strip()
                 find_version = re.compile(r'Version\s*(?P<version>[\d\.]+)')
                 match = find_version.search(version_response)
                 if not match:
-                    print('The DNS module could not detect unbound version.', file=sys.stderr)
+                    self.c.error('{!r}The DNS module could not detect unbound version.')
                     self.enabled = False
                 else:
-                    
+
                     self.version = match.groupdict()['version']
                     if not self.version:
-                        print('The DNS module could not detect unbound version.', file=sys.stderr)
+                        self.c.error('{!r}The DNS module could not detect unbound version.')
                         self.enabled = False
             except:
-                print('The DNS module could not run ubound.', file=sys.stderr)
+                self.c.error('{!r}The DNS module could not run ubound.')
                 self.enabled = False
 
         self.stdout = tools.ThreadOutput('DNS')
@@ -57,7 +55,7 @@ class DNS(BaseModule):
 
     def configure(self, args):
         if not self.enabled and (args.internet_interface is not None):
-            print('DNS module requested, but it will not run!', file=sys.stderr)
+            self.c.error('{!r}DNS module requested, but it will not run!')
 
         self.enabled_user = self.enabled and (args.internet_interface is not None)
         self.mask = args.subnet

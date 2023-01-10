@@ -1,6 +1,5 @@
 import argparse
 import subprocess
-import sys
 
 import tools
 from modules import BaseModule
@@ -12,7 +11,9 @@ class NAT(BaseModule):
     """
 
     def __init__(self):
-        self.subprocess = tools.mysubprocess(True, sys.stdout)
+        self.c = tools.ColorPrint(name=self.__class__.__name__)
+        self.subprocess = tools.mysubprocess(self.__class__.__name__)
+
         self.local_interface = None
         self.internet_interface = None
         self.enabled = True
@@ -23,18 +24,18 @@ class NAT(BaseModule):
         # This module requires nft
         self.binary = tools.locate('nft')
         if self.binary is None:
-            print('The NAT module requires nft (nftables) to be installed and on $PATH.', file=sys.stderr)
+            self.c.error('{!r}The NAT module requires nft (nftables) to be installed and on $PATH.')
             self.enabled = False
         else:
             try:
                 self.version = self.subprocess.check_output([self.binary, '-v'],
-                                                       stderr=subprocess.STDOUT).strip()
+                                                            stderr=subprocess.STDOUT).strip()
 
                 if not self.version:
-                    print('The NAT module could not detect nft (nftables) version.', file=sys.stderr)
+                    self.c.error('{!r}The NAT module could not detect nft (nftables) version.')
                     self.enabled = False
             except:
-                print('The NAT module could not run nft (nftables).', file=sys.stderr)
+                self.c.error('{!r}The NAT module could not run nft (nftables).')
                 self.enabled = False
 
     @staticmethod
@@ -43,7 +44,7 @@ class NAT(BaseModule):
 
     def configure(self, args):
         if not self.enabled and (args.internet_interface is not None):
-            print('NAT module requested to bridge interfaces, but it will not run!', file=sys.stderr)
+            self.c.error('{!r}NAT module requested to bridge interfaces, but it will not run!')
 
         self.local_interface = args.local_interface
         self.internet_interface = args.internet_interface
@@ -58,7 +59,8 @@ class NAT(BaseModule):
             return
 
         # Store old val
-        self.sysctl_backup = self.subprocess.check_output(['sysctl', 'net.ipv4.ip_forward'], stderr=subprocess.STDOUT).strip()
+        self.sysctl_backup = self.subprocess.check_output(['sysctl', 'net.ipv4.ip_forward'],
+                                                          stderr=subprocess.STDOUT).strip()
 
         # Enable forwarding
         self.subprocess.check_call(['sysctl', 'net.ipv4.ip_forward=1'])
@@ -69,8 +71,10 @@ class NAT(BaseModule):
         self.subprocess.check_call(['nft', 'add rule localnet forward ct state vmap '
                                            '{ established : accept, related : accept, invalid : drop }'])
         self.subprocess.check_call(['nft', 'add rule localnet forward iifname %s accept' % (self.local_interface,)])
-        self.subprocess.check_call(['nft', 'add chain ip localnet prerouting { type nat hook prerouting priority 90 ; }'])
-        self.subprocess.check_call(['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
+        self.subprocess.check_call(
+            ['nft', 'add chain ip localnet prerouting { type nat hook prerouting priority 90 ; }'])
+        self.subprocess.check_call(
+            ['nft', 'add chain ip localnet postrouting { type nat hook postrouting priority 90 ; }'])
         self.subprocess.check_call(['nft', 'add rule localnet postrouting ip saddr %s oifname %s masquerade' % (
             self.subnet_definiton, self.internet_interface)])
 

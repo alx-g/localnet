@@ -1,6 +1,5 @@
 import argparse
 import subprocess
-import sys
 
 import tools
 from modules import BaseModule
@@ -12,26 +11,28 @@ class NM(BaseModule):
     """
 
     def __init__(self):
-        self.subprocess = tools.mysubprocess(True, sys.stdout)
+        self.c = tools.ColorPrint(name=self.__class__.__name__)
+        self.subprocess = tools.mysubprocess(self.__class__.__name__)
+
         self.local_interface = None
         self.binary = tools.locate('nmcli')
         if self.binary is None:
-            print('Could not find nmcli.')
+            self.c.error('{!r}Could not find nmcli.')
             self.disabled = True
         else:
             try:
                 self.version = self.subprocess.check_output([self.binary, '--version'],
-                                                       stderr=subprocess.STDOUT).strip()
+                                                            stderr=subprocess.STDOUT).strip()
                 if not self.version:
-                    print('The NM module could not detect nmcli version.')
+                    self.c.error('{!r}The NM module could not detect nmcli version.')
                     self.disabled = True
             except:
-                print('The NM module could not run nmcli.')
+                self.c.error('{!r}The NM module could not run nmcli.')
                 self.disabled = True
             else:
                 self.disabled = False
         if self.disabled:
-            print('Assuming option --no-nm.')
+            self.c.print('{!y}Assuming option --no-nm.')
 
     @staticmethod
     def register_args(parser: argparse.ArgumentParser):

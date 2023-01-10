@@ -15,7 +15,8 @@ class DHCP(BaseModule):
     """
 
     def __init__(self):
-        self.subprocess = tools.mysubprocess(True, sys.stdout)
+        self.c = tools.ColorPrint(name=self.__class__.__name__)
+        self.subprocess = tools.mysubprocess(self.__class__.__name__)
         self.ip = None
         self.mask = None
         self.range = None
@@ -30,32 +31,32 @@ class DHCP(BaseModule):
         # This module requires dhcpd
         self.dhcpd_binary = tools.locate('dhcpd')
         if self.dhcpd_binary is None:
-            print('The DHCP module requires dhcpd to be installed and on $PATH. This is mandatory.', file=sys.stderr)
+            self.c.error('{!r}The DHCP module requires dhcpd to be installed and on $PATH. This is mandatory.')
             self.enabled = False
         else:
             try:
                 self.dhcpd_version = self.subprocess.check_output([self.dhcpd_binary, '--version'],
-                                                             stderr=subprocess.STDOUT).strip()
+                                                                  stderr=subprocess.STDOUT).strip()
                 if not self.dhcpd_version:
-                    print('The DHCP module could not detect dhcpd version. This is mandatory.', file=sys.stderr)
+                    self.c.error('{!r}The DHCP module could not detect dhcpd version. This is mandatory.')
                     self.enabled = False
             except:
-                print('The DHCP module could not run dhcpd. This is mandatory.', file=sys.stderr)
+                self.c.error('{!r}The DHCP module could not run dhcpd. This is mandatory.')
                 self.enabled = False
 
         self.ip_binary = tools.locate('ip')
         if self.ip_binary is None:
-            print('The DHCP module requires "ip" to be installed and on $PATH. This is mandatory.', file=sys.stderr)
+            self.c.error('{!r}The DHCP module requires "ip" to be installed and on $PATH. This is mandatory.')
             self.enabled = False
 
         try:
             self.ip_version = self.subprocess.check_output([self.ip_binary, '-V'], stderr=subprocess.STDOUT).strip()
 
             if not self.ip_version:
-                print('The DHCP module could not detect "ip" version. This is mandatory.', file=sys.stderr)
+                self.c.error('{!r}The DHCP module could not detect "ip" version. This is mandatory.')
                 self.enabled = False
         except:
-            print('The DHCP module could not run "ip". This is mandatory.', file=sys.stderr)
+            self.c.error('{!r}The DHCP module could not run "ip". This is mandatory.')
             self.enabled = False
 
         self.stdout = tools.ThreadOutput('DHCP')
@@ -75,7 +76,7 @@ class DHCP(BaseModule):
 
     def start(self):
         if not self.enabled:
-            print('Cannot run DHCP module. exiting.', file=sys.stderr)
+            self.c.error('{!r}Cannot run DHCP module. exiting.')
             sys.exit(1)
 
         self.configfile = tempfile.mkstemp(suffix='.conf', prefix='localnet_')[1]
@@ -114,11 +115,12 @@ class DHCP(BaseModule):
             self.subprocess.check_call([self.ip_binary, 'link', 'set', 'up', 'dev', self.local_interface])
             self.subprocess.check_call([self.ip_binary, 'address', 'flush', 'dev', self.local_interface])
             self.subprocess.check_call([self.ip_binary, 'address', 'add', '%s/%d' % (self.ip, self.mask), 'dev',
-                                   self.local_interface])
+                                        self.local_interface])
         except subprocess.CalledProcessError as e:
             if e.returncode == 2:
-                print('The "ip" command indicated that the kernel reported an error. Did you run this script with'
-                      'elevated privileges?')
+                self.c.error(
+                    '{!r}The "ip" command indicated that the kernel reported an error. Did you run this script with'
+                    'elevated privileges?')
                 sys.exit(100)
 
         # Start DHCPD
