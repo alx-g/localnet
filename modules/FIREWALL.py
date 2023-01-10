@@ -51,6 +51,7 @@ class FIREWALL(BaseModule):
     def register_args(parser: argparse.ArgumentParser):
         parser.add_argument('--firewall-type', action='store', type=str, default=None,
                             help='Set firewall type to configure manually, selected automatically by default')
+        parser.add_argument('--no-firewall', action='store_true', default=False, help='Do not configure firewalld')
 
     @staticmethod
     def find_available() -> List[str]:
@@ -68,6 +69,8 @@ class FIREWALL(BaseModule):
             if str(args.firewall_type) not in FIREWALL.SUPPORTED.keys():
                 self.c.error('{!}module does not recognize firewall type "%s". This module will not run!')
                 self.enabled = False
+        if args.no_firewall:
+            self.enabled = False
 
         self.local_interface = args.local_interface
         self.internet_interface = args.internet_interface

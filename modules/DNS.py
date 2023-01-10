@@ -32,21 +32,27 @@ class DNS(BaseModule):
             self.enabled = False
         else:
             try:
-                version_response = self.subprocess.check_output([self.binary, '-V'], stderr=subprocess.STDOUT).strip()
-                find_version = re.compile(r'Version\s*(?P<version>[\d\.]+)')
-                match = find_version.search(version_response)
-                if not match:
-                    self.c.error('{!r}The DNS module could not detect unbound version.')
-                    self.enabled = False
-                else:
-
-                    self.version = match.groupdict()['version']
-                    if not self.version:
-                        self.c.error('{!r}The DNS module could not detect unbound version.')
+                try:
+                    version_response = self.subprocess.check_output([self.binary, '-V'], stderr=subprocess.STDOUT).strip()
+                except subprocess.CalledProcessError as e:
+                    version_response = e.stdout.decode()
+                finally:
+                    find_version = re.compile(r'Version\s*(?P<version>[\d\.]+)')
+                    match = find_version.search(version_response)
+                    if not match:
+                        self.c.print('{!y}The DNS module could not detect unbound version.')
                         self.enabled = False
+                    else:
+                        self.version = match.groupdict()['version']
+                        if not self.version:
+                            self.c.print('{!y}The DNS module could not detect unbound version.')
+                            self.enabled = False
             except:
                 self.c.error('{!r}The DNS module could not run ubound.')
                 self.enabled = False
+            else:
+                if self.enabled:
+                    self.c.print('{!g}The DNS module was configured successfully.')
 
         self.stdout = tools.ThreadOutput('DNS')
 
